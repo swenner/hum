@@ -298,7 +298,9 @@ namespace Hum
 
 			this.about_action.activate.connect (show_about_dialog);
 			this.properties_action.activate.connect (show_properties_dialog);
-			this.clear_action.activate.connect (show_about_dialog);
+			this.clear_action.activate.connect ((action) => {
+					this.playlist_view.clear ();
+			});
 
 			Gtk.TreeSelection playlist_select = this.playlist_view.get_selection ();
 			playlist_select.changed.connect (handle_playlist_select_changed);

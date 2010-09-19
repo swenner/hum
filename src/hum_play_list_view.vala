@@ -44,6 +44,14 @@ namespace Hum
       this.drag_data_received.connect (on_drag_data_received);
     }
 
+    /* Remove all songs from the playlist */
+    public void clear ()
+    {
+      Gtk.ListStore list_model = (Gtk.ListStore) this.get_model ();
+      this.player.clear_playlist ();
+      list_model.clear ();
+    }
+
     /* Deal with an DND source data request. */
     private void on_drag_data_get (Gtk.Widget widget, Gdk.DragContext context,
                                    Gtk.SelectionData selection_data,
