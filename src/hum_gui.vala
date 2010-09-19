@@ -298,6 +298,7 @@ namespace Hum
 
 			this.about_action.activate.connect (show_about_dialog);
 			this.properties_action.activate.connect (show_properties_dialog);
+			this.clear_action.activate.connect (show_about_dialog);
 
 			Gtk.TreeSelection playlist_select = this.playlist_view.get_selection ();
 			playlist_select.changed.connect (handle_playlist_select_changed);
@@ -531,92 +532,91 @@ namespace Hum
 		{
 			// Verify that a track is selected and, if so, fill in the track metadata.
 			Gtk.TreeIter selection;
-			Gtk.TreeModel model;
 			Gtk.TreeSelection playlist_select = this.playlist_view.get_selection ();
-			bool is_selected = playlist_select.get_selected (out model, out selection);
-			bool selection_is_valid = this.playlist_store.iter_is_valid (selection);
-
-			if (is_selected && selection_is_valid)
-			{
-				// Load the UI description file.
-				Gtk.Builder properties_ui = new Gtk.Builder ();
-				string path = GLib.Path.build_filename (Config.PACKAGE_DATADIR, "properties.ui");
-
-				try
-				{
-					properties_ui.add_from_file (path);
-				}
-				catch (GLib.Error e)
-				{
-					stderr.printf ("Error loading the interface definition file: %s\n", e.message);
-				}
-
-				// Assign the widgets to a variable for manipulation later.
-				this.properties_dialog = (Gtk.Dialog) properties_ui.get_object ("properties_dialog");
-				Gtk.Action close_action = (Gtk.Action) properties_ui.get_object ("close_action");
-
-				Gtk.Label title_value = (Gtk.Label) properties_ui.get_object ("title_value");
-				Gtk.Label artist_value = (Gtk.Label) properties_ui.get_object ("artist_value");
-				Gtk.Label album_value = (Gtk.Label) properties_ui.get_object ("album_value");
-				Gtk.Label genre_value = (Gtk.Label) properties_ui.get_object ("genre_value");
-				Gtk.Label track_value = (Gtk.Label) properties_ui.get_object ("track_value");
-				Gtk.Label release_date_value = (Gtk.Label) properties_ui.get_object ("release_date_value");
-				Gtk.Label duration_value = (Gtk.Label) properties_ui.get_object ("duration_value");
-				Gtk.Label bitrate_value = (Gtk.Label) properties_ui.get_object ("bitrate_value");
-				Gtk.Label file_size_value = (Gtk.Label) properties_ui.get_object ("file_size_value");
-				Gtk.Label location_value = (Gtk.Label) properties_ui.get_object ("location_value");
-
-				// Pull the values for this track out of the list store.
-				GLib.Value uri;
-				GLib.Value title;
-				GLib.Value artist;
-				GLib.Value album;
-				GLib.Value genre;
-				GLib.Value track;
-				GLib.Value release_date;
-				GLib.Value duration;
-				GLib.Value bitrate;
-				GLib.Value file_size;
-
-				this.playlist_store.get_value (selection, Columns.URI, out uri);
-				this.playlist_store.get_value (selection, Columns.TITLE, out title);
-				this.playlist_store.get_value (selection, Columns.ARTIST, out artist);
-				this.playlist_store.get_value (selection, Columns.ALBUM, out album);
-				this.playlist_store.get_value (selection, Columns.GENRE, out genre);
-				this.playlist_store.get_value (selection, Columns.TRACK, out track);
-				this.playlist_store.get_value (selection, Columns.RELEASE_DATE, out release_date);
-				this.playlist_store.get_value (selection, Columns.DURATION, out duration);
-				this.playlist_store.get_value (selection, Columns.BITRATE, out bitrate);
-				this.playlist_store.get_value (selection, Columns.FILE_SIZE, out file_size);
-
-				title_value.set_text ((string) title);
-				artist_value.set_text ((string) artist);
-				album_value.set_text ((string) album);
-				genre_value.set_text ((string) genre);
-				track_value.set_text ((string) track);
-				release_date_value.set_text ((string) release_date);
-				duration_value.set_text ((string) duration);
-				bitrate_value.set_text ((string) bitrate);
-				file_size_value.set_text ((string) file_size);
-
-				try
-				{
-					location_value.set_text (GLib.Filename.from_uri ((string) uri));
-				}
-				catch (GLib.Error e)
-				{
-					location_value.set_text ("unknown");
-
-					critical ("Error while converting '%s' to a path: %s", (string) uri, e.message);
-				}
-
-				this.properties_dialog.set_title ("%s Properties".printf ((string) title));
-
-				// Hook up the "close" action.
-				close_action.activate.connect (close_properties_dialog);
-
-				this.properties_dialog.show_all ();
+			GLib.List<Gtk.TreePath> paths = playlist_select.get_selected_rows (null);
+			if (paths.length () < 1) {
+				return;
 			}
+			this.playlist_store.get_iter (out selection, paths.nth_data (0));
+
+			// Load the UI description file.
+			Gtk.Builder properties_ui = new Gtk.Builder ();
+			string path = GLib.Path.build_filename (Config.PACKAGE_DATADIR, "properties.ui");
+
+			try
+			{
+				properties_ui.add_from_file (path);
+			}
+			catch (GLib.Error e)
+			{
+				stderr.printf ("Error loading the interface definition file: %s\n", e.message);
+			}
+
+			// Assign the widgets to a variable for manipulation later.
+			this.properties_dialog = (Gtk.Dialog) properties_ui.get_object ("properties_dialog");
+			Gtk.Action close_action = (Gtk.Action) properties_ui.get_object ("close_action");
+
+			Gtk.Label title_value = (Gtk.Label) properties_ui.get_object ("title_value");
+			Gtk.Label artist_value = (Gtk.Label) properties_ui.get_object ("artist_value");
+			Gtk.Label album_value = (Gtk.Label) properties_ui.get_object ("album_value");
+			Gtk.Label genre_value = (Gtk.Label) properties_ui.get_object ("genre_value");
+			Gtk.Label track_value = (Gtk.Label) properties_ui.get_object ("track_value");
+			Gtk.Label release_date_value = (Gtk.Label) properties_ui.get_object ("release_date_value");
+			Gtk.Label duration_value = (Gtk.Label) properties_ui.get_object ("duration_value");
+			Gtk.Label bitrate_value = (Gtk.Label) properties_ui.get_object ("bitrate_value");
+			Gtk.Label file_size_value = (Gtk.Label) properties_ui.get_object ("file_size_value");
+			Gtk.Label location_value = (Gtk.Label) properties_ui.get_object ("location_value");
+
+			// Pull the values for this track out of the list store.
+			GLib.Value uri;
+			GLib.Value title;
+			GLib.Value artist;
+			GLib.Value album;
+			GLib.Value genre;
+			GLib.Value track;
+			GLib.Value release_date;
+			GLib.Value duration;
+			GLib.Value bitrate;
+			GLib.Value file_size;
+
+			this.playlist_store.get_value (selection, Columns.URI, out uri);
+			this.playlist_store.get_value (selection, Columns.TITLE, out title);
+			this.playlist_store.get_value (selection, Columns.ARTIST, out artist);
+			this.playlist_store.get_value (selection, Columns.ALBUM, out album);
+			this.playlist_store.get_value (selection, Columns.GENRE, out genre);
+			this.playlist_store.get_value (selection, Columns.TRACK, out track);
+			this.playlist_store.get_value (selection, Columns.RELEASE_DATE, out release_date);
+			this.playlist_store.get_value (selection, Columns.DURATION, out duration);
+			this.playlist_store.get_value (selection, Columns.BITRATE, out bitrate);
+			this.playlist_store.get_value (selection, Columns.FILE_SIZE, out file_size);
+
+			title_value.set_text ((string) title);
+			artist_value.set_text ((string) artist);
+			album_value.set_text ((string) album);
+			genre_value.set_text ((string) genre);
+			track_value.set_text ((string) track);
+			release_date_value.set_text ((string) release_date);
+			duration_value.set_text ((string) duration);
+			bitrate_value.set_text ((string) bitrate);
+			file_size_value.set_text ((string) file_size);
+
+			try
+			{
+				location_value.set_text (GLib.Filename.from_uri ((string) uri));
+			}
+			catch (GLib.Error e)
+			{
+				location_value.set_text ("unknown");
+
+				critical ("Error while converting '%s' to a path: %s", (string) uri, e.message);
+			}
+
+			this.properties_dialog.set_title ("%s Properties".printf ((string) title));
+
+			// Hook up the "close" action.
+			close_action.activate.connect (close_properties_dialog);
+
+			this.properties_dialog.show_all ();
 		}
 
 		private void handle_playlist_select_changed ()
